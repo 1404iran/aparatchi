@@ -1,4 +1,4 @@
-﻿// پل میان دروازه‌ی داده (Apps Script) و رابط کاربری
+// پل میان دروازه‌ی داده (Apps Script) و رابط کاربری — نسخه‌ی ۷ ساله
 import { useEffect, useMemo, useState } from "react";
 
 const EXEC_URL =
@@ -92,6 +92,15 @@ function toPoints(values: number[]): string {
 
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
+// نقطه‌ی شروع پنجره: ۷ روز / ۳۰ روز / «امسال» = سالِ آخرین روز آرشیو (مثلاً فقط ۱۴۰۵)
+function windowStart(days: string[], period: string): number {
+  if (period === "۷ روز") return Math.max(0, days.length - 7);
+  if (period === "۳۰ روز") return Math.max(0, days.length - 30);
+  const currentYear = days[days.length - 1].split("/")[0];
+  const idx = days.findIndex((d) => d.split("/")[0] === currentYear);
+  return idx > -1 ? idx : 0;
+}
+
 function build(
   raw: Gateway | null,
   status: Dash["status"],
@@ -105,8 +114,7 @@ function build(
   if (!raw || !raw.days || !raw.days.length) return { ...EMPTY_DASH, status };
 
   const days = raw.days;
-  const windowSize = period === "۷ روز" ? 7 : period === "۳۰ روز" ? 30 : days.length;
-  const i0 = Math.max(0, days.length - windowSize);
+  const i0 = windowStart(days, period);
   const winDays = days.slice(i0);
 
   // جست‌وجوی سریع: اگر عبارت با فیلم یا ژانری بخواند، نمودار روی همان متمرکز می‌شود
@@ -140,7 +148,7 @@ function build(
     { key: "بلیت", color: "#fb7185", points: toPoints(ticketsWin) },
   ];
 
-  // جدول استان‌ها: اگر فیلم یا ژانری انتخاب شده، تفکیک استانی همان؛ وگرنه جمع پنجره‌ی زمانی
+  // جدول استان‌ها: با فیلم/ژانرِ انتخابی، تفکیک استانی همان؛ وگرنه جمعِ پنجره‌ی زمانی
   let provVals: { name: string; t: number; s: number }[];
   const scopeMovie = pickedMovie || focusMovie;
   if (scopeMovie) {
